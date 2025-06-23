@@ -1,6 +1,6 @@
-# AI Agent Frontend
+# Admin Agent Frontend
 
-A modern React frontend for the AI Agent application that allows users to generate full-stack applications through natural language prompts.
+A modern React frontend for the Admin Agent application that allows users to generate full-stack applications through natural language prompts.
 
 ## Features
 
@@ -44,7 +44,7 @@ npm run preview
 
 ## Backend Integration
 
-This frontend connects to the AI Agent serverless backend. Make sure to:
+This frontend connects to the Admin Agent serverless backend. Make sure to:
 
 1. Deploy the backend first (see `../ai-agent/README.md`)
 2. Update `VITE_API_URL` with your API Gateway URL

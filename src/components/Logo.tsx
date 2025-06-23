@@ -7,7 +7,7 @@ const Logo = () => {
       <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-2 rounded-lg">
         <Zap className="text-white" size={20} />
       </div>
-      <span className="text-xl font-bold text-white">AI Agent</span>
+      <span className="text-xl font-bold text-white">Admin Agent</span>
     </div>
   );
 };
