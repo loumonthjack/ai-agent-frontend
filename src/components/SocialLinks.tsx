@@ -7,7 +7,7 @@ const SocialLinks = () => {
       <a
         href="mailto:me@loumonthjack.com"
         className="text-slate-400 hover:text-white transition-colors"
-        aria-label="Discord"
+        aria-label="Email"
       >
         <MessageCircle size={20} />
       </a>
@@ -21,7 +21,7 @@ const SocialLinks = () => {
       <a
         href="https://github.com/loumonthjack"
         className="text-slate-400 hover:text-white transition-colors"
-        aria-label="Reddit"
+        aria-label="GitHub"
       >
         <Github size={20} />
       </a>
