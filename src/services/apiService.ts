@@ -14,9 +14,10 @@ export interface Project {
   description?: string;
   prompt: string;
   userEmail?: string;
-  status: 'BUILDING' | 'DESIGN' | 'TESTING' | 'DEPLOYING' | 'ACTIVE' | 'FAILED';
+  status: 'BUILDING' | 'DESIGN' | 'TESTING' | 'DEPLOYING' | 'ACTIVE' | 'FAILED' | 'READY';
   createdAt: string;
   executionArn?: string;
+  websiteUrl?: string;
 }
 
 export interface Deployment {
@@ -141,7 +142,7 @@ class ApiService {
         }
 
         // Check if project is ready for deployment
-        if (project.status === 'DESIGN' || project.status === 'ACTIVE') {
+        if (project.status === 'DESIGN' || project.status === 'ACTIVE' || project.status === 'READY') {
           return project;
         }
 

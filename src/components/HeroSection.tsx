@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { ArrowRight, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import BuildingPhase from './BuildingPhase';
-import { apiService } from '../services/apiService';
+import { apiService, Project } from '../services/apiService';
 
 const HeroSection = () => {
   const [inputValue, setInputValue] = useState('');
   const [isBuilding, setIsBuilding] = useState(false);
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [project, setProject] = useState<Project | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [creationProgress, setCreationProgress] = useState('');
 
@@ -74,7 +75,7 @@ const HeroSection = () => {
       // Step 2: Wait for AI generation to complete (this is the long process)
       setCreationProgress('AI is analyzing your requirements...');
       
-      await apiService.waitForProjectReady(project.id, (status) => {
+      const readyProject = await apiService.waitForProjectReady(project.id, (status) => {
         switch (status) {
           case 'BUILDING':
             setCreationProgress('AI is generating your application structure...');
@@ -82,12 +83,16 @@ const HeroSection = () => {
           case 'DESIGN':
             setCreationProgress('AI generation complete! Preparing for deployment...');
             break;
+          case 'READY':
+            setCreationProgress('Project is ready! Website has been deployed...');
+            break;
           default:
             setCreationProgress('Processing...');
         }
       });
 
       // Step 3: Project is ready, start building phase
+      setProject(readyProject);
       setCreationProgress('Starting deployment process...');
       await new Promise(resolve => setTimeout(resolve, 500));
       
@@ -112,13 +117,14 @@ const HeroSection = () => {
     setIsBuilding(false);
     setIsCreatingProject(false);
     setProjectId(null);
+    setProject(null);
     setInputValue('');
     setError(null);
     setCreationProgress('');
   };
 
   if (isBuilding && projectId) {
-    return <BuildingPhase projectId={projectId} onReset={handleReset} />;
+    return <BuildingPhase projectId={projectId} onReset={handleReset} project={project} />;
   }
 
   // Project Creation Loading State (includes AI generation)

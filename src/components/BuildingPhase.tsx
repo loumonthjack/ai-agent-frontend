@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, Circle, Loader2, AlertCircle, ArrowLeft, ExternalLink, Clock, Zap, Code, TestTube, Globe, Settings } from 'lucide-react';
-import { apiService, DeploymentStatus } from '../services/apiService';
+import { apiService, DeploymentStatus, Project } from '../services/apiService';
 import { API_CONFIG } from '../config/api';
 
 interface BuildingPhaseProps {
   projectId: string;
   onReset: () => void;
+  project?: Project;
 }
 
-const BuildingPhase: React.FC<BuildingPhaseProps> = ({ projectId, onReset }) => {
+const BuildingPhase: React.FC<BuildingPhaseProps> = ({ projectId, onReset, project }) => {
   const [deploymentStatus, setDeploymentStatus] = useState<DeploymentStatus | null>(null);
   const [deploymentId, setDeploymentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -188,6 +189,39 @@ const BuildingPhase: React.FC<BuildingPhaseProps> = ({ projectId, onReset }) => 
     );
   }
 
+  // Show website link immediately if project already has websiteUrl (READY status)
+  if (project?.websiteUrl && !deploymentStatus) {
+    return (
+      <div className="text-center max-w-2xl mx-auto">
+        <div className="bg-green-900/20 border border-green-500/30 rounded-xl p-8 mb-8">
+          <CheckCircle size={48} className="text-green-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-green-400 mb-2">Website Ready!</h2>
+          <p className="text-slate-300 mb-6">Your AI-generated website is already live and ready to view.</p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+            <a
+              href={project.websiteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-colors flex items-center space-x-2"
+            >
+              <ExternalLink size={18} />
+              <span>View Website</span>
+            </a>
+          </div>
+          
+          <button
+            onClick={onReset}
+            className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-lg transition-colors flex items-center space-x-2 mx-auto"
+          >
+            <ArrowLeft size={18} />
+            <span>Build Something New</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (deploymentStatus?.status === 'SUCCEEDED') {
     return (
       <div className="text-center max-w-2xl mx-auto">
@@ -210,6 +244,17 @@ const BuildingPhase: React.FC<BuildingPhaseProps> = ({ projectId, onReset }) => 
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+            {project?.websiteUrl && (
+              <a
+                href={project.websiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-colors flex items-center space-x-2"
+              >
+                <ExternalLink size={18} />
+                <span>View Website</span>
+              </a>
+            )}
             {deploymentStatus.outputs?.frontendUrl && (
               <a
                 href={deploymentStatus.outputs.frontendUrl}
