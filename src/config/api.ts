@@ -12,6 +12,7 @@ export const API_CONFIG = {
 
 export const API_ENDPOINTS = {
   PROJECTS: '/projects',
+  PROJECT: (projectId: string) => `/projects/${projectId}`,
   DEPLOYMENTS: (projectId: string) => `/projects/${projectId}/deployments`,
   DEPLOYMENT_STATUS: (projectId: string, deploymentId: string) => 
     `/projects/${projectId}/deployments/${deploymentId}`,

@@ -5,6 +5,23 @@ export interface CreateProjectRequest {
   description?: string;
   prompt: string;
   userEmail?: string;
+  businessDetails?: {
+    businessName?: string;
+    industry?: string;
+    targetAudience?: string;
+    tone?: 'professional' | 'casual' | 'modern' | 'elegant' | 'playful' | 'corporate' | 'creative' | 'minimalist';
+    colorPreference?: 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'neutral' | 'dark' | 'colorful' | 'minimal';
+    features?: string[];
+    // New design options
+    fontFamily?: 'sans-serif' | 'serif' | 'display' | 'handwritten' | 'monospace' | 'custom';
+    layoutStyle?: 'centered' | 'full-width' | 'sidebar-left' | 'sidebar-right' | 'asymmetric' | 'magazine';
+    headerStyle?: 'fixed' | 'transparent' | 'solid' | 'minimal' | 'bold' | 'classic';
+    buttonStyle?: 'rounded' | 'square' | 'pill' | 'ghost' | 'gradient' | '3d';
+    animationLevel?: 'none' | 'subtle' | 'moderate' | 'rich';
+    typographyScale?: 'small' | 'medium' | 'large' | 'extra-large';
+    spacing?: 'compact' | 'normal' | 'spacious' | 'airy';
+    sectionStyle?: 'flat' | 'cards' | 'waves' | 'geometric' | 'gradient' | 'parallax';
+  };
 }
 
 export interface Project {
@@ -18,6 +35,10 @@ export interface Project {
   createdAt: string;
   executionArn?: string;
   websiteUrl?: string;
+  previewUrl?: string;
+  deploymentUrl?: string;
+  demo?: string;
+  url?: string;
 }
 
 export interface Deployment {
@@ -40,6 +61,10 @@ export interface DeploymentStatus {
     frontendUrl?: string;
     backendUrl?: string;
   };
+  buildDetails?: {
+    websiteUrl?: string;
+    buildLog?: string;
+  };
   error?: string;
 }
 
@@ -52,6 +77,14 @@ class ApiService {
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
+    
+    // Debug logging
+    console.log('API Request:', {
+      method: options.method || 'GET',
+      url,
+      baseUrl: this.baseUrl,
+      endpoint
+    });
     
     // Create an AbortController for timeout handling
     const controller = new AbortController();
@@ -69,14 +102,39 @@ class ApiService {
 
       clearTimeout(timeoutId);
 
+      console.log('API Response:', {
+        url,
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
       if (!response.ok) {
         const error = await response.text();
+        console.error('API Error Details:', {
+          url,
+          status: response.status,
+          statusText: response.statusText,
+          errorBody: error
+        });
         throw new Error(`API Error (${response.status}): ${error}`);
       }
 
-      return response.json();
+      const result = await response.json();
+      console.log('API Success:', {
+        url,
+        dataKeys: result && typeof result === 'object' ? Object.keys(result) : 'not-object'
+      });
+      
+      return result;
     } catch (error) {
       clearTimeout(timeoutId);
+      
+      console.error('API Request Failed:', {
+        url,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        type: error instanceof Error ? error.name : typeof error
+      });
       
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error(`Request timeout after ${API_CONFIG.TIMEOUT}ms`);
@@ -99,31 +157,34 @@ class ApiService {
    * Get project status - can be used to check if AI generation is complete
    */
   async getProject(projectId: string): Promise<Project> {
-    const response = await this.request<{success: boolean; data: Project}>(
-      `${API_ENDPOINTS.PROJECTS}/${projectId}`
-    );
+    const response = await this.request<{success: boolean; data: Project}>(API_ENDPOINTS.PROJECT(projectId));
     
     return response.data;
   }
 
   /**
-   * Create deployment - only called after project AI generation is complete
+   * Get deployment status - maps project status to deployment format for compatibility
    */
-  async createDeployment(projectId: string, request: unknown = {}): Promise<Deployment> {
-    const response = await this.request<{success: boolean; data: Deployment}>(API_ENDPOINTS.DEPLOYMENTS(projectId), {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-    
-    return response.data;
-  }
-
   async getDeploymentStatus(projectId: string, deploymentId: string): Promise<DeploymentStatus> {
-    const response = await this.request<{success: boolean; data: DeploymentStatus}>(
-      API_ENDPOINTS.DEPLOYMENT_STATUS(projectId, deploymentId)
-    );
+    // Get current project status and map to deployment status format
+    const project = await this.getProject(projectId);
     
-    return response.data;
+    return {
+      id: deploymentId,
+      status: project.status === 'READY' ? 'SUCCEEDED' : 
+              project.status === 'FAILED' ? 'FAILED' : 'RUNNING',
+      steps: {
+        generateCode: project.status === 'READY' ? 'SUCCEEDED' : 
+                     project.status === 'BUILDING' ? 'RUNNING' : 'PENDING',
+        runTests: project.status === 'READY' ? 'SUCCEEDED' : 'PENDING',
+        deployFrontend: project.status === 'READY' ? 'SUCCEEDED' : 'PENDING',
+        deployBackend: project.status === 'READY' ? 'SUCCEEDED' : 'PENDING'
+      },
+              buildDetails: project.websiteUrl ? {
+          websiteUrl: project.websiteUrl
+        } : undefined,
+      error: project.status === 'FAILED' ? 'Website generation failed' : undefined
+    };
   }
 
   /**

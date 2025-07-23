@@ -4,49 +4,177 @@
 
 @layer base {
   html {
-    scroll-behavior: smooth;
+    @apply scroll-smooth;
   }
-  
+
   body {
-    @apply bg-slate-900 text-white antialiased;
+    @apply antialiased;
   }
 }
 
 @layer components {
   .container {
-    @apply max-w-7xl;
+    @apply mx-auto px-4 max-w-7xl;
   }
 }
 
-/* Custom gradient backgrounds */
+/* Gradient backgrounds */
 .gradient-bg {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
-/* Smooth animations */
+/* Glow effects */
 .animate-glow {
-  animation: glow 2s ease-in-out infinite alternate;
+  animation: glow 3s ease-in-out infinite alternate;
 }
 
 @keyframes glow {
   from {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
   }
   to {
-    box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 0 30px rgba(102, 126, 234, 0.6), 0 0 40px rgba(102, 126, 234, 0.4);
   }
 }
 
-/* Focus states */
-input:focus {
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+/* Enhanced focus states */
+input:focus,
+textarea:focus,
+select:focus {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-900;
 }
 
-/* Hover animations */
+/* Hover lift effect */
 .hover-lift {
-  transition: transform 0.2s ease-in-out;
+  @apply transition-transform duration-200;
 }
 
 .hover-lift:hover {
-  transform: translateY(-2px);
+  @apply transform -translate-y-1;
+}
+
+/* Pulse animation for loading states */
+@keyframes pulse-blue {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+}
+
+.animate-pulse-blue {
+  animation: pulse-blue 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Gradient text animation */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* Custom checkbox styles */
+input[type="checkbox"] {
+  @apply w-4 h-4 rounded border-slate-600 bg-slate-900 text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900;
+}
+
+input[type="checkbox"]:checked {
+  @apply bg-blue-500 border-blue-500;
+}
+
+/* Custom select dropdown arrow */
+select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Fix select dropdown options in dark mode */
+select option {
+  @apply bg-slate-800 text-white;
+  background-color: rgb(30 41 59);
+  color: white;
+}
+
+select option:hover,
+select option:focus,
+select option:active,
+select option:checked {
+  @apply bg-slate-700;
+  background-color: rgb(51 65 85);
+  color: white;
+}
+
+/* Dark mode select fix for better visibility */
+@media (prefers-color-scheme: dark) {
+  select {
+    color-scheme: dark;
+  }
+}
+
+/* Fix for select dropdown in different browsers */
+select::-ms-expand {
+  display: none;
+}
+
+/* Ensure select text is visible */
+select {
+  color: white !important;
+}
+
+/* Floating card animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Loading spinner */
+.spinner {
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border-top-color: #3b82f6;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Card hover effects */
+.card-hover {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+.card-hover:hover {
+  @apply transform scale-105 shadow-2xl;
+}
+
+/* Smooth transitions for all interactive elements */
+button, a, input, textarea, select {
+  @apply transition-all duration-200 ease-in-out;
 }

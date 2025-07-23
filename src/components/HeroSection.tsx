@@ -1,239 +1,553 @@
-import React, { useState } from 'react';
-import { ArrowRight, AlertCircle, Loader2, Sparkles } from 'lucide-react';
-import BuildingPhase from './BuildingPhase';
-import { apiService, Project } from '../services/apiService';
+import React, { useState, useEffect } from 'react';
+import { Loader2, AlertCircle, Info, Sparkles, Building2, Users, ChevronDown, ChevronUp, Wand2 } from 'lucide-react';
+import { apiService, CreateProjectRequest, Project } from '../services/apiService';
+import V0Preview from './V0Preview';
 
 const HeroSection = () => {
-  const [inputValue, setInputValue] = useState('');
-  const [isBuilding, setIsBuilding] = useState(false);
-  const [isCreatingProject, setIsCreatingProject] = useState(false);
+  const [prompt, setPrompt] = useState('');
+  const [businessName, setBusinessName] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [targetAudience, setTargetAudience] = useState('');
+  const [tone, setTone] = useState<'professional' | 'casual' | 'modern' | 'elegant' | 'playful' | 'corporate' | 'creative' | 'minimalist'>('professional');
+  const [colorPreference, setColorPreference] = useState<'blue' | 'green' | 'purple' | 'orange' | 'red' | 'neutral' | 'dark' | 'colorful' | 'minimal'>('blue');
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [project, setProject] = useState<Project | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [creationProgress, setCreationProgress] = useState('');
+  const [charCount, setCharCount] = useState(0);
+  const [showSplitView, setShowSplitView] = useState(false);
+  
+  // New design states
+  const [fontFamily, setFontFamily] = useState<'sans-serif' | 'serif' | 'display' | 'handwritten' | 'monospace' | 'custom'>('sans-serif');
+  const [layoutStyle, setLayoutStyle] = useState<'centered' | 'full-width' | 'sidebar-left' | 'sidebar-right' | 'asymmetric' | 'magazine'>('centered');
+  const [headerStyle, setHeaderStyle] = useState<'fixed' | 'transparent' | 'solid' | 'minimal' | 'bold' | 'classic'>('fixed');
+  const [buttonStyle, setButtonStyle] = useState<'rounded' | 'square' | 'pill' | 'ghost' | 'gradient' | '3d'>('rounded');
+  const [animationLevel, setAnimationLevel] = useState<'none' | 'subtle' | 'moderate' | 'rich'>('moderate');
+  const [typographyScale, setTypographyScale] = useState<'small' | 'medium' | 'large' | 'extra-large'>('medium');
+  const [spacing, setSpacing] = useState<'compact' | 'normal' | 'spacious' | 'airy'>('normal');
+  const [sectionStyle, setSectionStyle] = useState<'flat' | 'cards' | 'waves' | 'geometric' | 'gradient' | 'parallax'>('flat');
 
-  const generateProjectName = (prompt: string): string => {
-    // Extract key words from prompt and create a project name
-    const words = prompt
-      .toLowerCase()
-      .replace(/[^\w\s]/g, '') // Remove special characters
-      .split(/\s+/)
-      .filter(word => word.length > 2) // Filter out small words
-      .slice(0, 3); // Take first 3 meaningful words
-    
-    let projectName = words.join('-') || 'ai-generated-app';
-    
-    // Ensure project name meets backend validation requirements
-    // Must be 3-50 characters and contain only alphanumeric, spaces, hyphens, underscores
-    projectName = projectName.replace(/[^a-zA-Z0-9\s\-_]/g, ''); // Remove invalid chars
-    
-    if (projectName.length < 3) {
-      projectName = 'ai-generated-app';
-    }
-    
-    if (projectName.length > 50) {
-      projectName = projectName.substring(0, 50);
-    }
-    
-    return projectName;
+  // Update character count when prompt changes
+  useEffect(() => {
+    setCharCount(prompt.length);
+  }, [prompt]);
+
+  const toneOptions = [
+    { value: 'professional', label: 'Professional', description: 'Clean and corporate' },
+    { value: 'casual', label: 'Casual', description: 'Friendly and approachable' },
+    { value: 'modern', label: 'Modern', description: 'Cutting-edge and trendy' },
+    { value: 'elegant', label: 'Elegant', description: 'Sophisticated and refined' },
+    { value: 'playful', label: 'Playful', description: 'Fun and energetic' },
+    { value: 'corporate', label: 'Corporate', description: 'Business-focused' },
+    { value: 'creative', label: 'Creative', description: 'Artistic and unique' },
+    { value: 'minimalist', label: 'Minimalist', description: 'Simple and clean' }
+  ];
+
+  const colorOptions = [
+    { value: 'blue', label: 'Blue', hex: '#3B82F6' },
+    { value: 'green', label: 'Green', hex: '#10B981' },
+    { value: 'purple', label: 'Purple', hex: '#8B5CF6' },
+    { value: 'orange', label: 'Orange', hex: '#F97316' },
+    { value: 'red', label: 'Red', hex: '#EF4444' },
+    { value: 'neutral', label: 'Neutral', hex: '#6B7280' },
+    { value: 'dark', label: 'Dark', hex: '#1F2937' },
+    { value: 'colorful', label: 'Colorful', hex: 'linear-gradient(to right, #3B82F6, #8B5CF6)' },
+    { value: 'minimal', label: 'Minimal', hex: '#F3F4F6' }
+  ];
+
+  const featuresOptions = [
+    'Contact Form', 'Image Gallery', 'About Section', 'Services Page',
+    'Testimonials', 'Team Page', 'Blog', 'Portfolio', 'Pricing Tables',
+    'FAQ Section', 'Newsletter Signup', 'Social Media Links',
+    'Google Maps', 'Search Functionality', 'Multi-language Support', 'E-commerce'
+  ];
+
+  const industryOptions = [
+    'Technology', 'Healthcare', 'Education', 'Finance', 'Real Estate',
+    'Restaurant', 'Retail', 'Consulting', 'Creative Agency', 'Non-profit',
+    'Fitness', 'Beauty', 'Legal', 'Construction', 'Manufacturing', 'Other'
+  ];
+
+  const generateProjectName = (businessName: string): string => {
+    const sanitized = businessName.replace(/[^a-zA-Z0-9\s]/g, '').trim();
+    return sanitized || `Website-${Date.now()}`;
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    const prompt = inputValue.trim();
-    
-    if (!prompt) return;
-    
-    // Validate prompt length (matching backend validation)
-    if (prompt.length < 50) {
-      setError('Please provide a more detailed description (at least 50 characters)');
+    setError(null);
+
+    // Enhanced validation
+    if (!businessName.trim()) {
+      setError('Please enter your business name');
       return;
     }
-    
+
+    if (!industry) {
+      setError('Please select your industry');
+      return;
+    }
+
+    if (prompt.length < 50) {
+      setError('Please provide more details about your website (minimum 50 characters)');
+      return;
+    }
+
     if (prompt.length > 2000) {
       setError('Description is too long (maximum 2000 characters)');
       return;
     }
 
-    setIsCreatingProject(true);
-    setError(null);
+    setIsLoading(true);
+    setShowSplitView(true);
     
+    // Create a temporary project ID for loading state
+    const tempProjectId = `temp_${Date.now()}`;
+    setProjectId(tempProjectId);
+
     try {
-      // Step 1: Create project (fast, returns immediately)
-      setCreationProgress('Creating project...');
-      const projectName = generateProjectName(prompt);
-      const description = prompt.length > 200 ? prompt.substring(0, 197) + '...' : prompt;
-      
-      const project = await apiService.createProject({
-        projectName,
-        prompt,
-        description
-      });
+      const enrichedPrompt = `
+        Create a ${tone} website for ${businessName}, a ${industry} business.
+        Target audience: ${targetAudience || 'general public'}.
+        
+        Specific requirements:
+        ${prompt}
+        
+        Features needed: ${selectedFeatures.join(', ') || 'standard business features'}.
+        
+        Use a ${colorPreference} color scheme with a ${tone} design approach.
+        Font style: ${fontFamily}, Layout: ${layoutStyle}, Animation: ${animationLevel}.
+      `.trim();
 
-      setProjectId(project.id);
-
-      // Step 2: Wait for AI generation to complete (this is the long process)
-      setCreationProgress('AI is analyzing your requirements...');
-      
-      const readyProject = await apiService.waitForProjectReady(project.id, (status) => {
-        switch (status) {
-          case 'BUILDING':
-            setCreationProgress('AI is generating your application structure...');
-            break;
-          case 'DESIGN':
-            setCreationProgress('AI generation complete! Preparing for deployment...');
-            break;
-          case 'READY':
-            setCreationProgress('Project is ready! Website has been deployed...');
-            break;
-          default:
-            setCreationProgress('Processing...');
+      const request: CreateProjectRequest = {
+        projectName: generateProjectName(businessName),
+        description: `${tone} website for ${businessName} - ${industry}`,
+        prompt: enrichedPrompt,
+        businessDetails: {
+          businessName,
+          industry,
+          targetAudience,
+          tone,
+          colorPreference,
+          features: selectedFeatures,
+          fontFamily,
+          layoutStyle,
+          headerStyle,
+          buttonStyle,
+          animationLevel,
+          typographyScale,
+          spacing,
+          sectionStyle
         }
-      });
+      };
 
-      // Step 3: Project is ready, start building phase
-      setProject(readyProject);
-      setCreationProgress('Starting deployment process...');
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setIsCreatingProject(false);
-      setIsBuilding(true);
-      
-    } catch (error) {
-      console.error('Error creating project:', error);
-      setError(error instanceof Error ? error.message : 'Failed to create project');
-      setIsCreatingProject(false);
-      setCreationProgress('');
+      const createdProject = await apiService.createProject(request);
+      setProjectId(createdProject.id);
+      setProject(createdProject);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
+      setShowSplitView(false);
+      setProjectId(null);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       handleSubmit();
     }
   };
 
   const handleReset = () => {
-    setIsBuilding(false);
-    setIsCreatingProject(false);
     setProjectId(null);
     setProject(null);
-    setInputValue('');
+    setPrompt('');
+    setBusinessName('');
+    setIndustry('');
+    setTargetAudience('');
+    setTone('professional');
+    setColorPreference('blue');
+    setSelectedFeatures([]);
+    setIsLoading(false);
     setError(null);
-    setCreationProgress('');
+    setShowAdvanced(false);
+    setCharCount(0);
+    setShowSplitView(false);
+    // Reset new design states
+    setFontFamily('sans-serif');
+    setLayoutStyle('centered');
+    setHeaderStyle('fixed');
+    setButtonStyle('rounded');
+    setAnimationLevel('moderate');
+    setTypographyScale('medium');
+    setSpacing('normal');
+    setSectionStyle('flat');
   };
 
-  if (isBuilding && projectId) {
-    return <BuildingPhase projectId={projectId} onReset={handleReset} project={project} />;
-  }
+  const toggleFeature = (feature: string) => {
+    setSelectedFeatures(prev => 
+      prev.includes(feature) 
+        ? prev.filter(f => f !== feature)
+        : [...prev, feature]
+    );
+  };
 
-  // Project Creation Loading State (includes AI generation)
-  if (isCreatingProject) {
+  // Split view when showing preview
+  if (showSplitView && projectId) {
     return (
-      <div className="text-center max-w-2xl mx-auto">
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 mb-8">
-          <div className="flex items-center justify-center mb-6">
-            <div className="relative">
-              <Sparkles className="text-blue-400 animate-pulse" size={48} />
-            </div>
-          </div>
-          
-          <h2 className="text-2xl font-bold text-white mb-4">Creating Your AI-Powered App</h2>
-          <p className="text-slate-400 mb-6">Our AI is analyzing your requirements and designing your application...</p>
-          
-          <div className="space-y-4">
-            <div className="flex items-center justify-center space-x-3">
-              <Loader2 size={16} className="text-blue-400 animate-spin" />
-              <span className="text-blue-400 font-medium">{creationProgress}</span>
-            </div>
-            
-            <div className="w-full bg-slate-700 rounded-full h-2">
-              <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full animate-pulse" 
-                   style={{ width: '60%' }}></div>
-            </div>
-            
-            <p className="text-slate-500 text-sm">
-              This process can take 2-5 minutes as our AI generates your complete application
-            </p>
-          </div>
+      <div className="h-screen flex">
+        {/* Left Panel - Form */}
+        <div className="w-1/2 flex flex-col border-r border-slate-700">
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-2xl">
+              <div className="text-center mb-8">
+                <div className="flex items-center justify-center space-x-3 mb-4">
+                  <Sparkles className="text-blue-400" size={32} />
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    LouAI
+                  </h1>
+                </div>
+                <p className="text-lg text-slate-300 mb-2">
+                  V0-Powered Website Generation
+                </p>
+                <p className="text-slate-400">
+                  {isLoading ? 'Your website is being generated with V0.dev' : 'Your website is ready!'}
+                </p>
+              </div>
 
-          <button
-            onClick={handleReset}
-            className="mt-6 text-slate-400 hover:text-white transition-colors text-sm"
-          >
-            Cancel
-          </button>
+              {/* Project Summary */}
+              <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6 mb-6">
+                <h3 className="text-lg font-semibold text-white mb-4">Project Details</h3>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <span className="text-slate-400">Business:</span>
+                    <span className="text-white ml-2">{businessName}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Industry:</span>
+                    <span className="text-white ml-2">{industry}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Style:</span>
+                    <span className="text-white ml-2">{tone} • {colorPreference}</span>
+                  </div>
+                  {selectedFeatures.length > 0 && (
+                    <div>
+                      <span className="text-slate-400">Features:</span>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {selectedFeatures.map(feature => (
+                          <span key={feature} className="bg-blue-600/20 text-blue-300 px-2 py-1 rounded text-xs">
+                            {feature}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-slate-400">Requirements:</span>
+                    <p className="text-white mt-1 text-xs leading-relaxed">{prompt}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Display */}
+              {error && (
+                <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-6">
+                  <div className="flex items-start space-x-2">
+                    <AlertCircle className="text-red-400 mt-0.5" size={20} />
+                    <p className="text-red-300">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Control Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleReset}
+                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-3 px-4 rounded-lg transition-colors"
+                  disabled={isLoading}
+                >
+                  New Project
+                </button>
+                {project?.websiteUrl && !isLoading && (
+                  <a
+                    href={project.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg transition-colors text-center"
+                  >
+                    View Live Site
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Panel - V0 Preview */}
+        <div className="w-1/2">
+          <V0Preview 
+            projectId={projectId.startsWith('temp_') ? '' : projectId}
+            onReset={handleReset} 
+            project={project || {
+              id: projectId,
+              projectId: projectId,
+              projectName: generateProjectName(businessName),
+              description: `${tone} website for ${businessName} - ${industry}`,
+              prompt: prompt,
+              status: isLoading ? 'BUILDING' : 'READY',
+              createdAt: new Date().toISOString()
+            }}
+            isLoading={isLoading}
+          />
         </div>
       </div>
     );
   }
 
+  // Original full-width form view
   return (
-    <div className="text-center max-w-4xl mx-auto">
-      <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
-        What do you want to{' '}
-        <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-          build?
-        </span>
-      </h1>
-      
-      <p className="text-xl text-slate-400 mb-12 leading-relaxed">
-        Create stunning apps & websites by chatting with AI.
-      </p>
-
-      {error && (
-        <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-4 mb-6 max-w-2xl mx-auto">
-          <div className="flex items-center space-x-3">
-            <AlertCircle size={20} className="text-red-400 flex-shrink-0" />
-            <p className="text-red-300 text-left">{error}</p>
-          </div>
+    <div className="max-w-4xl mx-auto">
+      <div className="text-center mb-12">
+        <div className="flex items-center justify-center space-x-3 mb-4">
+          <Sparkles className="text-blue-400" size={40} />
+          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            LouAI
+          </h1>
         </div>
-      )}
+        <p className="text-xl text-slate-300 mb-2">
+          Create a custom website powered by V0.dev
+        </p>
+        <p className="text-slate-400">
+          Describe your vision and watch V0 bring it to life with live preview
+        </p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto mb-8">
-        <div className="relative">
-          <textarea
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="How can we help you today?"
-            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-6 py-4 pr-20 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-lg resize-none"
-            rows={1}
-            disabled={isCreatingProject}
-            maxLength={2000}
-          />
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-slate-700 p-8 shadow-2xl">
+          
+          {/* Business Name */}
+          <div className="mb-6">
+            <label htmlFor="businessName" className="block text-sm font-medium text-slate-300 mb-2 flex items-center space-x-2">
+              <Building2 size={16} />
+              <span>Business Name *</span>
+            </label>
+            <input
+              id="businessName"
+              type="text"
+              value={businessName}
+              onChange={(e) => setBusinessName(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              placeholder="Enter your business name"
+              required
+            />
+          </div>
+
+          {/* Industry (Required) */}
+          <div className="mb-6">
+            <label htmlFor="industry" className="block text-sm font-medium text-slate-300 mb-2 flex items-center space-x-2">
+              <Users size={16} />
+              <span>Industry *</span>
+            </label>
+            <select
+              id="industry"
+              value={industry}
+              onChange={(e) => setIndustry(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              required
+            >
+              <option value="">Select your industry</option>
+              {industryOptions.map(option => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Website Description */}
+          <div className="mb-6">
+            <label htmlFor="prompt" className="block text-sm font-medium text-slate-300 mb-2 flex items-center justify-between">
+              <span className="flex items-center space-x-2">
+                <Wand2 size={16} />
+                <span>Describe Your Website Vision *</span>
+              </span>
+              <span className={`text-xs ${charCount < 50 ? 'text-yellow-400' : charCount > 1900 ? 'text-red-400' : 'text-slate-400'}`}>
+                {charCount}/2000
+              </span>
+            </label>
+            <textarea
+              id="prompt"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-h-[120px] resize-none"
+              placeholder="Describe what you want your website to do, what pages you need, special features, and any specific requirements... (minimum 50 characters)"
+              required
+              minLength={50}
+              maxLength={2000}
+            />
+            {charCount < 50 && charCount > 0 && (
+              <p className="text-yellow-400 text-xs mt-1">Please provide at least {50 - charCount} more characters</p>
+            )}
+          </div>
+
+          {/* Advanced Options Toggle */}
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors mb-6"
+          >
+            {showAdvanced ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            <span>Advanced Options</span>
+          </button>
+
+          {/* Advanced Options */}
+          {showAdvanced && (
+            <div className="space-y-6 mb-6 p-6 bg-slate-900/30 rounded-xl border border-slate-600">
+              {/* Target Audience */}
+              <div>
+                <label htmlFor="targetAudience" className="block text-sm font-medium text-slate-300 mb-2">
+                  Target Audience
+                </label>
+                <input
+                  id="targetAudience"
+                  type="text"
+                  value={targetAudience}
+                  onChange={(e) => setTargetAudience(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  placeholder="e.g., Small business owners, Young professionals, Families"
+                />
+              </div>
+
+              {/* Design Tone */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-3">
+                  Design Tone
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {toneOptions.map(option => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setTone(option.value as 'professional' | 'casual' | 'modern' | 'elegant' | 'playful' | 'corporate' | 'creative' | 'minimalist')}
+                      className={`p-3 rounded-lg border transition-all text-left ${
+                        tone === option.value
+                          ? 'border-blue-500 bg-blue-600/20 text-blue-300'
+                          : 'border-slate-600 bg-slate-900/30 text-slate-300 hover:border-slate-500'
+                      }`}
+                    >
+                      <div className="font-medium">{option.label}</div>
+                      <div className="text-xs opacity-75">{option.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Color Preference */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-3">
+                  Color Scheme
+                </label>
+                <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+                  {colorOptions.map(option => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setColorPreference(option.value as 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'neutral' | 'dark' | 'colorful' | 'minimal')}
+                      className={`p-3 rounded-lg border transition-all ${
+                        colorPreference === option.value
+                          ? 'border-blue-500 bg-blue-600/20'
+                          : 'border-slate-600 bg-slate-900/30 hover:border-slate-500'
+                      }`}
+                    >
+                      <div 
+                        className="w-8 h-8 rounded-lg mb-2 mx-auto"
+                        style={{ 
+                          background: option.hex 
+                        }}
+                      />
+                      <div className="text-xs text-center text-slate-300">{option.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Features */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-3">
+                  Website Features
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {featuresOptions.map(feature => (
+                    <button
+                      key={feature}
+                      type="button"
+                      onClick={() => toggleFeature(feature)}
+                      className={`p-2 text-sm rounded-lg border transition-all ${
+                        selectedFeatures.includes(feature)
+                          ? 'border-blue-500 bg-blue-600/20 text-blue-300'
+                          : 'border-slate-600 bg-slate-900/30 text-slate-300 hover:border-slate-500'
+                      }`}
+                    >
+                      {feature}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Error Display */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
+              <div className="flex items-start space-x-2">
+                <AlertCircle className="text-red-400 mt-0.5" size={20} />
+                <p className="text-red-300">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Submit Button */}
           <button
             type="submit"
-            disabled={!inputValue.trim() || inputValue.trim().length < 50 || isCreatingProject}
-            className="absolute right-4 bottom-6 text-slate-400 hover:text-white transition-colors p-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading || charCount < 50 || !businessName || !industry}
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-600 disabled:to-slate-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-[1.02] disabled:scale-100 disabled:cursor-not-allowed flex items-center justify-center space-x-3 shadow-lg"
           >
-            {isCreatingProject ? (
-              <Loader2 size={18} className="animate-spin" />
+            {isLoading ? (
+              <>
+                <Loader2 className="animate-spin" size={20} />
+                <span>V0 is creating your website...</span>
+              </>
             ) : (
-              <ArrowRight size={18} />
+              <>
+                <Sparkles size={20} />
+                <span>Generate Website</span>
+              </>
             )}
           </button>
-        </div>
-        
-        {/* Character counter */}
-        <div className="flex justify-between mt-2 text-sm">
-          <span className={`${
-            inputValue.length < 50 
-              ? 'text-orange-400' 
-              : inputValue.length > 2000 
-                ? 'text-red-400' 
-                : 'text-green-400'
-          }`}>
-            {inputValue.length < 50 
-              ? `${50 - inputValue.length} more characters needed`
-              : inputValue.length > 2000
-                ? `${inputValue.length - 2000} characters over limit`
-                : 'Ready to build!'
-            }
-          </span>
-          <span className="text-slate-500">
-            {inputValue.length}/2000
-          </span>
+
+          {/* Info Message */}
+          <div className="mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+            <div className="flex items-start space-x-2">
+              <Info className="text-blue-400 mt-0.5" size={20} />
+              <div className="text-sm text-slate-300">
+                <p className="font-medium mb-1">Powered by V0.dev:</p>
+                <ul className="space-y-1 text-slate-400">
+                  <li>• AI analyzes your requirements and creates a custom website</li>
+                  <li>• Real-time preview with live deployment</li>
+                  <li>• Modern React + Next.js with Tailwind CSS</li>
+                  <li>• Production-ready hosting on Vercel</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       </form>
     </div>
