@@ -24,15 +24,21 @@ const V0Preview: React.FC<V0PreviewProps> = ({ projectId, onReset, project, isLo
   }, [project]);
 
   useEffect(() => {
-    // Don't poll if we don't have a real projectId or if externally loading
-    if (!projectId || externalLoading || !currentProject || currentProject.status === 'READY') {
+    if (!projectId || projectId.startsWith('temp_') || !currentProject) {
+      return;
+    }
+
+    // Don't poll if project is already ready
+    if (currentProject.status === 'READY') {
       return;
     }
 
     const pollProject = async () => {
       try {
         setLoading(true);
+        console.log('Polling project:', projectId);
         const updatedProject = await apiService.getProject(projectId);
+        console.log('Updated project:', updatedProject);
         setCurrentProject(updatedProject);
         
         if (updatedProject.websiteUrl) {
@@ -51,9 +57,11 @@ const V0Preview: React.FC<V0PreviewProps> = ({ projectId, onReset, project, isLo
       }
     };
 
+    // Start polling immediately, then every 3 seconds
+    pollProject();
     const interval = setInterval(pollProject, 3000);
     return () => clearInterval(interval);
-  }, [projectId, currentProject?.status, externalLoading]);
+  }, [projectId, currentProject?.status]);
 
   const refreshPreview = () => {
     if (previewUrl) {
@@ -71,19 +79,26 @@ const V0Preview: React.FC<V0PreviewProps> = ({ projectId, onReset, project, isLo
         return <CheckCircle className="w-5 h-5 text-green-500" />;
       case 'FAILED':
         return <AlertCircle className="w-5 h-5 text-red-500" />;
+      case 'BUILDING':
+      case 'DESIGN':
+      case 'TESTING':
+      case 'DEPLOYING':
+        return <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />;
       default:
         return <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />;
     }
   };
 
   const getStatusText = () => {
-    if (externalLoading) {
-      return 'Generating website with V0...';
-    }
-    
     switch (currentProject?.status) {
       case 'BUILDING':
-        return 'Generating website with V0...';
+        return 'Analyzing requirements...';
+      case 'DESIGN':
+        return 'Designing website...';
+      case 'TESTING':
+        return 'Testing website...';
+      case 'DEPLOYING':
+        return 'Deploying website...';
       case 'READY':
         return 'Website ready!';
       case 'FAILED':
@@ -92,6 +107,19 @@ const V0Preview: React.FC<V0PreviewProps> = ({ projectId, onReset, project, isLo
         return 'Processing...';
     }
   };
+
+  // Show loading state when external loading is true
+  if (externalLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <Loader2 className="w-16 h-16 text-blue-500 animate-spin mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-white mb-2">Creating Your Project</h3>
+          <p className="text-slate-400">Setting up your website generation...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (error && !currentProject) {
     return (
@@ -162,12 +190,18 @@ const V0Preview: React.FC<V0PreviewProps> = ({ projectId, onReset, project, isLo
 
       {/* Preview Content */}
       <div className="flex-1 relative">
-        {currentProject?.status === 'BUILDING' || loading || externalLoading ? (
+        {currentProject?.status === 'BUILDING' || currentProject?.status === 'DESIGN' || currentProject?.status === 'TESTING' || currentProject?.status === 'DEPLOYING' || loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <Loader2 className="w-16 h-16 text-blue-500 animate-spin mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">Generating Your Website</h3>
-              <p className="text-slate-400">V0 is creating a custom website based on your requirements...</p>
+              <p className="text-slate-400">
+                {currentProject?.status === 'BUILDING' && 'V0 is analyzing your requirements...'}
+                {currentProject?.status === 'DESIGN' && 'V0 is designing your website...'}
+                {currentProject?.status === 'TESTING' && 'V0 is testing your website...'}
+                {currentProject?.status === 'DEPLOYING' && 'V0 is deploying your website...'}
+                {!currentProject?.status && 'V0 is creating a custom website based on your requirements...'}
+              </p>
             </div>
           </div>
         ) : currentProject?.status === 'FAILED' ? (
@@ -186,7 +220,7 @@ const V0Preview: React.FC<V0PreviewProps> = ({ projectId, onReset, project, isLo
               </button>
             </div>
           </div>
-        ) : previewUrl || deploymentUrl ? (
+        ) : currentProject?.status === 'READY' && (previewUrl || deploymentUrl) ? (
           <iframe
             id="v0-preview"
             src={previewUrl || deploymentUrl || 'https://v0.dev/'}
@@ -194,7 +228,7 @@ const V0Preview: React.FC<V0PreviewProps> = ({ projectId, onReset, project, isLo
             title="V0 Website Preview"
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
           />
-        ) : (
+        ) : currentProject?.status === 'READY' ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
@@ -213,6 +247,14 @@ const V0Preview: React.FC<V0PreviewProps> = ({ projectId, onReset, project, isLo
                   <span>View Live Website</span>
                 </a>
               )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <Loader2 className="w-16 h-16 text-blue-500 animate-spin mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">Initializing...</h3>
+              <p className="text-slate-400">Setting up your project...</p>
             </div>
           </div>
         )}

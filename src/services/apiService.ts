@@ -33,12 +33,27 @@ export interface Project {
   userEmail?: string;
   status: 'BUILDING' | 'DESIGN' | 'TESTING' | 'DEPLOYING' | 'ACTIVE' | 'FAILED' | 'READY';
   createdAt: string;
+  updatedAt: string;
   executionArn?: string;
   websiteUrl?: string;
   previewUrl?: string;
   deploymentUrl?: string;
   demo?: string;
   url?: string;
+  assets?: {
+    websiteUrl?: string;
+    previewUrl?: string;
+    deploymentUrl?: string;
+  };
+}
+
+export interface ProjectsResponse {
+  success: boolean;
+  data: {
+    projects: Project[];
+    total: number;
+  };
+  timestamp: string;
 }
 
 export interface Deployment {
@@ -154,6 +169,55 @@ class ApiService {
   }
 
   /**
+   * Create project without waiting for full response - returns immediately
+   */
+  async createProjectNonBlocking(request: CreateProjectRequest): Promise<void> {
+    await this.request<{success: boolean}>(API_ENDPOINTS.PROJECTS, {
+      method: 'POST',
+      body: JSON.stringify({...request, userEmail: 'me@loumonthjack.com'}),
+    });
+  }
+
+  /**
+   * Find the most recently created project (likely the one we just created)
+   */
+  async findLatestProject(): Promise<Project | null> {
+    try {
+      const response = await this.fetchProjects();
+      if (response.data.projects.length > 0) {
+        // Sort by creation date and return the most recent
+        const sortedProjects = response.data.projects.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        return sortedProjects[0];
+      }
+      return null;
+    } catch (error) {
+      console.error('Error finding latest project:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Find projects created within the last few minutes
+   */
+  async findRecentProjects(minutes: number = 2): Promise<Project[]> {
+    try {
+      const response = await this.fetchProjects();
+      const cutoffTime = new Date(Date.now() - minutes * 60 * 1000);
+      
+      return response.data.projects.filter(project => 
+        new Date(project.createdAt) > cutoffTime
+      ).sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    } catch (error) {
+      console.error('Error finding recent projects:', error);
+      return [];
+    }
+  }
+
+  /**
    * Get project status - can be used to check if AI generation is complete
    */
   async getProject(projectId: string): Promise<Project> {
@@ -163,36 +227,11 @@ class ApiService {
   }
 
   /**
-   * Get deployment status - maps project status to deployment format for compatibility
-   */
-  async getDeploymentStatus(projectId: string, deploymentId: string): Promise<DeploymentStatus> {
-    // Get current project status and map to deployment status format
-    const project = await this.getProject(projectId);
-    
-    return {
-      id: deploymentId,
-      status: project.status === 'READY' ? 'SUCCEEDED' : 
-              project.status === 'FAILED' ? 'FAILED' : 'RUNNING',
-      steps: {
-        generateCode: project.status === 'READY' ? 'SUCCEEDED' : 
-                     project.status === 'BUILDING' ? 'RUNNING' : 'PENDING',
-        runTests: project.status === 'READY' ? 'SUCCEEDED' : 'PENDING',
-        deployFrontend: project.status === 'READY' ? 'SUCCEEDED' : 'PENDING',
-        deployBackend: project.status === 'READY' ? 'SUCCEEDED' : 'PENDING'
-      },
-              buildDetails: project.websiteUrl ? {
-          websiteUrl: project.websiteUrl
-        } : undefined,
-      error: project.status === 'FAILED' ? 'Website generation failed' : undefined
-    };
-  }
-
-  /**
    * Poll project status until AI generation is complete
    */
   async waitForProjectReady(projectId: string, onProgress?: (status: string) => void): Promise<Project> {
     let attempts = 0;
-    const maxAttempts = 60; // 5 minutes with 5-second intervals
+    const maxAttempts = 120; // 5 minutes with 5-second intervals
 
     while (attempts < maxAttempts) {
       try {
@@ -203,7 +242,7 @@ class ApiService {
         }
 
         // Check if project is ready for deployment
-        if (project.status === 'DESIGN' || project.status === 'ACTIVE' || project.status === 'READY') {
+        if (['DESIGN', 'ACTIVE', 'READY'].includes(project.status)) {
           return project;
         }
 
@@ -230,6 +269,14 @@ class ApiService {
     }
 
     throw new Error('Timeout waiting for project to be ready');
+  }
+
+  /**
+   * Fetch all projects
+   */
+  async fetchProjects(): Promise<ProjectsResponse> {
+    const response = await this.request<ProjectsResponse>(API_ENDPOINTS.PROJECTS);
+    return response;
   }
 }
 

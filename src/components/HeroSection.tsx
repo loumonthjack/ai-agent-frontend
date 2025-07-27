@@ -102,10 +102,7 @@ const HeroSection = () => {
 
     setIsLoading(true);
     setShowSplitView(true);
-    
-    // Create a temporary project ID for loading state
-    const tempProjectId = `temp_${Date.now()}`;
-    setProjectId(tempProjectId);
+    setError(null);
 
     try {
       const enrichedPrompt = `
@@ -143,9 +140,14 @@ const HeroSection = () => {
         }
       };
 
+      // Create project and get immediate response with projectId
       const createdProject = await apiService.createProject(request);
-      setProjectId(createdProject.id);
+      console.log('Created project:', createdProject);
+      
+      // Set the project immediately with the returned projectId
+      setProjectId(createdProject.projectId);
       setProject(createdProject);
+      
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -295,17 +297,9 @@ const HeroSection = () => {
         {/* Right Panel - V0 Preview */}
         <div className="w-1/2">
           <V0Preview 
-            projectId={projectId.startsWith('temp_') ? '' : projectId}
+            projectId={projectId}
             onReset={handleReset} 
-            project={project || {
-              id: projectId,
-              projectId: projectId,
-              projectName: generateProjectName(businessName),
-              description: `${tone} website for ${businessName} - ${industry}`,
-              prompt: prompt,
-              status: isLoading ? 'BUILDING' : 'READY',
-              createdAt: new Date().toISOString()
-            }}
+            project={project || undefined}
             isLoading={isLoading}
           />
         </div>
@@ -324,7 +318,7 @@ const HeroSection = () => {
           </h1>
         </div>
         <p className="text-xl text-slate-300 mb-2">
-          Create a custom website powered by V0.dev
+          Create a custom web apps powered by V0.dev
         </p>
         <p className="text-slate-400">
           Describe your vision and watch V0 bring it to life with live preview
@@ -540,7 +534,7 @@ const HeroSection = () => {
               <div className="text-sm text-slate-300">
                 <p className="font-medium mb-1">Powered by V0.dev:</p>
                 <ul className="space-y-1 text-slate-400">
-                  <li>• AI analyzes your requirements and creates a custom website</li>
+                  <li>• AI analyzes your requirements and creates a custom web app</li>
                   <li>• Real-time preview with live deployment</li>
                   <li>• Modern React + Next.js with Tailwind CSS</li>
                   <li>• Production-ready hosting on Vercel</li>

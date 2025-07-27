@@ -1,9 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
 import Footer from './components/Footer';
+import ProjectSidebar from './components/ProjectSidebar';
 
 function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 text-white relative overflow-hidden">
       {/* Background gradient effects */}
@@ -12,12 +19,15 @@ function App() {
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full filter blur-3xl pointer-events-none" />
       
       <div className="relative z-10">
-        <Header />
-        <main className="container mx-auto px-4 py-16">
+        <Header onToggleSidebar={toggleSidebar} />
+        <main className="container mx-auto">
           <HeroSection />
         </main>
         <Footer />
       </div>
+
+      {/* Project Sidebar */}
+      <ProjectSidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
     </div>
   );
 }
