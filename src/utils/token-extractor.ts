@@ -1,3 +1,5 @@
+import { getAuthToken } from './cookie-utils';
+
 // Try to extract token from Cognito's internal storage
 export const extractTokenFromCognitoStorage = (): string | null => {
   try {
@@ -51,11 +53,20 @@ export const isTokenValid = (token: string): boolean => {
 
 // Get a valid token using any available method
 export const getValidToken = (): string | null => {
-  const token = extractTokenFromCognitoStorage();
-  
-  if (token && isTokenValid(token)) {
-    return token;
+  // First try to get token from cookies (our auth service stores them there)
+  const cookieToken = getAuthToken();
+  if (cookieToken && isTokenValid(cookieToken)) {
+    console.log('Found valid token in cookies');
+    return cookieToken;
   }
   
+  // Then try Cognito storage
+  const cognitoToken = extractTokenFromCognitoStorage();
+  if (cognitoToken && isTokenValid(cognitoToken)) {
+    console.log('Found valid token in Cognito storage');
+    return cognitoToken;
+  }
+  
+  console.log('No valid token found');
   return null;
 }; 

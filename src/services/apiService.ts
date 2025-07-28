@@ -1,4 +1,6 @@
 import { API_CONFIG, API_ENDPOINTS } from '../config/api';
+import { getValidToken } from '../utils/token-extractor';
+import { refreshAuthSession } from './authService';
 
 export interface CreateProjectRequest {
   projectName: string;
@@ -104,12 +106,16 @@ class ApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
+    // Get the auth token
+    let authToken = getValidToken();
+    
     // Debug logging
     console.log('API Request:', {
       method: options.method || 'GET',
       url,
       baseUrl: this.baseUrl,
-      endpoint
+      endpoint,
+      hasAuthToken: !!authToken
     });
     
     // Create an AbortController for timeout handling
@@ -117,12 +123,19 @@ class ApiService {
     const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
     
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      };
+
+      // Add authorization header if token is available
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+      
       const response = await fetch(url, {
         ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+        headers,
         signal: controller.signal,
       });
 
@@ -134,6 +147,46 @@ class ApiService {
         statusText: response.statusText,
         ok: response.ok
       });
+
+      // If we get a 401 and have a token, try to refresh the session
+      if (response.status === 401 && authToken) {
+        console.log('Got 401, attempting to refresh auth session...');
+        const refreshSuccess = await refreshAuthSession();
+        
+        if (refreshSuccess) {
+          // Get the new token and retry the request
+          authToken = getValidToken();
+          if (authToken) {
+            console.log('Token refreshed, retrying request...');
+            headers['Authorization'] = `Bearer ${authToken}`;
+            
+            const retryResponse = await fetch(url, {
+              ...options,
+              headers,
+              signal: controller.signal,
+            });
+            
+            if (!retryResponse.ok) {
+              const error = await retryResponse.text();
+              console.error('API Error after token refresh:', {
+                url,
+                status: retryResponse.status,
+                statusText: retryResponse.statusText,
+                errorBody: error
+              });
+              throw new Error(`API Error (${retryResponse.status}): ${error}`);
+            }
+            
+            const result = await retryResponse.json();
+            console.log('API Success after token refresh:', {
+              url,
+              dataKeys: result && typeof result === 'object' ? Object.keys(result) : 'not-object'
+            });
+            
+            return result;
+          }
+        }
+      }
 
       if (!response.ok) {
         const error = await response.text();
