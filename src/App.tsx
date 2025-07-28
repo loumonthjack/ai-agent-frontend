@@ -3,6 +3,8 @@ import Header from './components/Header';
 import HeroSection from './components/HeroSection';
 import Footer from './components/Footer';
 import ProjectSidebar from './components/ProjectSidebar';
+import { useAuth } from './contexts/Auth';
+
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -10,8 +12,15 @@ function App() {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+  const { isAuthenticated } = useAuth();
 
+    if (!isAuthenticated) {
+      window.location.href = process.env.NODE_ENV === 'localhost' ? 'http://localhost:3000/login' : 'https://admin.loumonthjack.com';
+    }
+  
   return (
+    
+  
     <div className="min-h-screen bg-slate-900 text-white relative overflow-hidden">
       {/* Background gradient effects */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-900 to-purple-900/20 pointer-events-none" />
