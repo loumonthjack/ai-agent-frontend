@@ -402,12 +402,39 @@ const HeroSection = () => {
           <div className="flex-1 overflow-y-auto p-6">
             <div className="max-w-2xl">
               <div className="text-center mb-8">
-                <div className="flex items-center justify-center space-x-3 mb-4">
-                  <Sparkles className="text-blue-400" size={32} />
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    LouAI
-                  </h1>
-                </div>
+              <div className="flex items-center justify-center space-x-3 mb-4 mt-12">
+        <span
+            className="text-blue-400 text-3xl animate-pulse drop-shadow-lg"
+            role="img"
+            aria-label="crystal ball"
+            style={{ filter: 'drop-shadow(0 0 12px #3B82F6)' }}
+          >
+            🔮
+          </span>
+          <h1
+            className="text-4xl font-bold bg-gradient-to-r from-white via-blue-400 to-purple-400 bg-clip-text text-transparent animate-gradient-x"
+            style={{
+              backgroundSize: '200% 200%',
+              animation: 'gradient-x 3s ease-in-out infinite'
+            }}
+          >
+            LouAI
+          </h1>
+          <style>
+            {`
+              @keyframes gradient-x {
+                0%, 100% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+              }
+              .animate-spin-slow {
+                animation: spin 3s linear infinite;
+              }
+              @keyframes spin {
+                100% { transform: rotate(360deg); }
+              }
+            `}
+          </style>
+        </div>
                 <p className="text-lg text-slate-300 mb-2">
                   V0-Powered Website Generation
                 </p>

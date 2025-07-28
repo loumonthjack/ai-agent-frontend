@@ -42,6 +42,7 @@ export interface Project {
   deploymentUrl?: string;
   demo?: string;
   url?: string;
+  deployments?: Deployment[];
   assets?: {
     websiteUrl?: string;
     previewUrl?: string;
@@ -61,8 +62,11 @@ export interface ProjectsResponse {
 export interface Deployment {
   id: string;
   projectId: string;
-  status: 'RUNNING' | 'SUCCEEDED' | 'FAILED';
+  status: 'RUNNING' | 'SUCCESS' | 'FAILED';
   createdAt: string;
+  frontendArtifacts?: {
+    websiteUrl?: string;
+  };
 }
 
 export interface DeploymentStatus {

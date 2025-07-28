@@ -38,16 +38,15 @@ const V0Preview: React.FC<V0PreviewProps> = ({ projectId, onReset, project, isLo
         setLoading(true);
         console.log('Polling project:', projectId);
         const updatedProject = await apiService.getProject(projectId);
+
         console.log('Updated project:', updatedProject);
         setCurrentProject(updatedProject);
         
-        if (updatedProject.websiteUrl) {
-          setDeploymentUrl(updatedProject.websiteUrl);
+        setDeploymentUrl(null);
+        if (updatedProject.deployments?.[0]?.frontendArtifacts?.websiteUrl) {
+          setPreviewUrl(updatedProject.deployments?.[0]?.frontendArtifacts?.websiteUrl);
         }
-        if (updatedProject.previewUrl) {
-          setPreviewUrl(updatedProject.previewUrl);
-        }
-        
+
         setError(null);
       } catch (err) {
         console.error('Error polling project:', err);
