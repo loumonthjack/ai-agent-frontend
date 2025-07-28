@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
 import Footer from './components/Footer';
@@ -19,7 +19,7 @@ function App() {
     return (
       <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
         <div className="text-center">
-          <div className="spinner mb-4"></div>
+          <div className="spinner mb-4" />
           <p>Loading...</p>
         </div>
       </div>
