@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, AlertCircle, Info, Sparkles, Building2, Users, ChevronDown, ChevronUp, Wand2 } from 'lucide-react';
-import { apiService, CreateProjectRequest, Project } from '../services/apiService';
+import { Loader2, AlertCircle, Info, Sparkles, Building2, Users, ChevronDown, ChevronUp, Wand2, CheckCircle, XCircle } from 'lucide-react';
+import { apiService, CreateProjectRequest, Project, DomainAvailabilityResponse } from '../services/apiService';
 import V0Preview from './V0Preview';
 
 const HeroSection = () => {
@@ -28,6 +28,12 @@ const HeroSection = () => {
   const [typographyScale, setTypographyScale] = useState<'small' | 'medium' | 'large' | 'extra-large'>('medium');
   const [spacing, setSpacing] = useState<'compact' | 'normal' | 'spacious' | 'airy'>('normal');
   const [sectionStyle, setSectionStyle] = useState<'flat' | 'cards' | 'waves' | 'geometric' | 'gradient' | 'parallax'>('flat');
+
+  // Domain availability states
+  const [domainName, setDomainName] = useState('');
+  const [domainAvailability, setDomainAvailability] = useState<DomainAvailabilityResponse | null>(null);
+  const [isCheckingDomain, setIsCheckingDomain] = useState(false);
+  const [domainError, setDomainError] = useState<string | null>(null);
 
   // Update character count when prompt changes
   useEffect(() => {
@@ -73,6 +79,41 @@ const HeroSection = () => {
   const generateProjectName = (businessName: string): string => {
     const sanitized = businessName.replace(/[^a-zA-Z0-9\s]/g, '').trim();
     return sanitized || `Website-${Date.now()}`;
+  };
+
+  const validateDomain = (domain: string): boolean => {
+    // Basic domain validation regex
+    const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
+    return domainRegex.test(domain);
+  };
+
+  const checkDomainAvailability = async (domain: string) => {
+    if (!domain.trim()) {
+      setDomainAvailability(null);
+      setDomainError(null);
+      return;
+    }
+
+    // Validate domain format before sending to API
+    if (!validateDomain(domain)) {
+      setDomainError('Please enter a valid domain name (e.g., example.com)');
+      setDomainAvailability(null);
+      setIsCheckingDomain(false);
+      return;
+    }
+
+    setIsCheckingDomain(true);
+    setDomainError(null);
+
+    try {
+      const result = await apiService.checkDomainAvailability(domain);
+      setDomainAvailability(result);
+    } catch (error) {
+      setDomainError(error instanceof Error ? error.message : 'Failed to check domain availability');
+      setDomainAvailability(null);
+    } finally {
+      setIsCheckingDomain(false);
+    }
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -173,6 +214,10 @@ const HeroSection = () => {
     setProject(null);
     setPrompt('');
     setBusinessName('');
+    setDomainName('');
+    setDomainAvailability(null);
+    setDomainError(null);
+    setIsCheckingDomain(false);
     setIndustry('');
     setTargetAudience('');
     setTone('professional');
@@ -233,6 +278,19 @@ const HeroSection = () => {
                     <span className="text-slate-400">Business:</span>
                     <span className="text-white ml-2">{businessName}</span>
                   </div>
+                  {domainName && (
+                    <div>
+                      <span className="text-slate-400">Domain:</span>
+                      <span className="text-white ml-2">{domainName}</span>
+                      {domainAvailability && (
+                        <span className={`ml-2 text-xs ${
+                          domainAvailability.available ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          ({domainAvailability.available ? 'Available' : 'Not Available'})
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <div>
                     <span className="text-slate-400">Industry:</span>
                     <span className="text-white ml-2">{industry}</span>
@@ -311,14 +369,41 @@ const HeroSection = () => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-12">
-        <div className="flex items-center justify-center space-x-3 mb-4">
-          <Sparkles className="text-blue-400" size={40} />
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+        <div className="flex items-center justify-center space-x-3 mb-4 mt-12">
+        <span
+            className="text-blue-400 text-4xl animate-pulse drop-shadow-lg"
+            role="img"
+            aria-label="crystal ball"
+            style={{ filter: 'drop-shadow(0 0 12px #3B82F6)' }}
+          >
+            🔮
+          </span>
+          <h1
+            className="text-5xl font-bold bg-gradient-to-r from-white via-blue-400 to-purple-400 bg-clip-text text-transparent animate-gradient-x"
+            style={{
+              backgroundSize: '200% 200%',
+              animation: 'gradient-x 3s ease-in-out infinite'
+            }}
+          >
             LouAI
           </h1>
+          <style>
+            {`
+              @keyframes gradient-x {
+                0%, 100% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+              }
+              .animate-spin-slow {
+                animation: spin 3s linear infinite;
+              }
+              @keyframes spin {
+                100% { transform: rotate(360deg); }
+              }
+            `}
+          </style>
         </div>
         <p className="text-xl text-slate-300 mb-2">
-          Create a custom web apps powered by V0.dev
+          Custom web apps powered by <a href="https://v0.dev" className="text-blue-400 hover:text-blue-300">V0.dev</a>
         </p>
         <p className="text-slate-400">
           Describe your vision and watch V0 bring it to life with live preview
@@ -344,6 +429,8 @@ const HeroSection = () => {
               required
             />
           </div>
+
+
 
           {/* Industry (Required) */}
           <div className="mb-6">
@@ -405,6 +492,65 @@ const HeroSection = () => {
           {/* Advanced Options */}
           {showAdvanced && (
             <div className="space-y-6 mb-6 p-6 bg-slate-900/30 rounded-xl border border-slate-600">
+              {/* Domain Name */}
+              <div>
+                <label htmlFor="domainName" className="block text-sm font-medium text-slate-300 mb-2 flex items-center space-x-2">
+                  <span>🌐</span>
+                  <span>Domain Name (Optional)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    id="domainName"
+                    type="text"
+                    value={domainName}
+                    onChange={(e) => {
+                      setDomainName(e.target.value);
+                      // Debounce domain checking
+                      setTimeout(() => {
+                        checkDomainAvailability(e.target.value);
+                      }, 500);
+                    }}
+                    className="w-full px-4 py-3 pr-12 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="e.g., mybusiness.com"
+                  />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    {isCheckingDomain && (
+                      <Loader2 className="animate-spin text-blue-400" size={20} />
+                    )}
+                    {!isCheckingDomain && domainAvailability && (
+                      domainAvailability.available ? (
+                        <CheckCircle className="text-green-400" size={20} />
+                      ) : (
+                        <XCircle className="text-red-400" size={20} />
+                      )
+                    )}
+                  </div>
+                </div>
+                {domainAvailability && (
+                  <div className={`mt-2 text-sm flex items-center space-x-2 ${
+                    domainAvailability.available ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {domainAvailability.available ? (
+                      <>
+                        <CheckCircle size={16} />
+                        <span>Available</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle size={16} />
+                        <span>Not available</span>
+                      </>
+                    )}
+                  </div>
+                )}
+                {domainError && (
+                  <div className="mt-2 text-sm text-red-400 flex items-center space-x-2">
+                    <AlertCircle size={16} />
+                    <span>{domainError}</span>
+                  </div>
+                )}
+              </div>
+
               {/* Target Audience */}
               <div>
                 <label htmlFor="targetAudience" className="block text-sm font-medium text-slate-300 mb-2">

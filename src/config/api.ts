@@ -16,4 +16,5 @@ export const API_ENDPOINTS = {
   DEPLOYMENTS: (projectId: string) => `/projects/${projectId}/deployments`,
   DEPLOYMENT_STATUS: (projectId: string, deploymentId: string) => 
     `/projects/${projectId}/deployments/${deploymentId}`,
+  DOMAIN: '/domain',
 }; 

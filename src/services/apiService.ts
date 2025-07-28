@@ -83,6 +83,11 @@ export interface DeploymentStatus {
   error?: string;
 }
 
+export interface DomainAvailabilityResponse {
+  domain: string;
+  available: boolean;
+}
+
 class ApiService {
   private baseUrl: string;
 
@@ -277,6 +282,18 @@ class ApiService {
   async fetchProjects(): Promise<ProjectsResponse> {
     const response = await this.request<ProjectsResponse>(API_ENDPOINTS.PROJECTS);
     return response;
+  }
+
+  /**
+   * Check domain availability
+   */
+  async checkDomainAvailability(domain: string): Promise<DomainAvailabilityResponse> {
+    const response = await this.request<{success: boolean; data: DomainAvailabilityResponse}>(API_ENDPOINTS.DOMAIN, {
+      method: 'POST',
+      body: JSON.stringify({ domain }),
+    });
+    
+    return response.data;
   }
 }
 
