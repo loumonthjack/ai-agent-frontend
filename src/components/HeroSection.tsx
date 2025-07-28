@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, AlertCircle, Info, Sparkles, Building2, Users, ChevronDown, ChevronUp, Wand2, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Info, Sparkles, Building2, Users, ChevronDown, ChevronUp, Wand2, CheckCircle, XCircle, Palette } from 'lucide-react';
 import { apiService, CreateProjectRequest, Project, DomainAvailabilityResponse } from '../services/apiService';
 import V0Preview from './V0Preview';
 
@@ -9,7 +9,9 @@ const HeroSection = () => {
   const [industry, setIndustry] = useState('');
   const [targetAudience, setTargetAudience] = useState('');
   const [tone, setTone] = useState<'professional' | 'casual' | 'modern' | 'elegant' | 'playful' | 'corporate' | 'creative' | 'minimalist'>('professional');
-  const [colorPreference, setColorPreference] = useState<'blue' | 'green' | 'purple' | 'orange' | 'red' | 'neutral' | 'dark' | 'colorful' | 'minimal'>('blue');
+  const [colorPreference, setColorPreference] = useState<'blue' | 'green' | 'purple' | 'orange' | 'red' | 'neutral' | 'dark' | 'colorful' | 'minimal' | 'rgb'>('blue');
+  const [customRgbColor, setCustomRgbColor] = useState('#3B82F6');
+  const [showColorWheel, setShowColorWheel] = useState(false);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,6 +42,145 @@ const HeroSection = () => {
     setCharCount(prompt.length);
   }, [prompt]);
 
+  // Color wheel component
+  const ColorWheel = ({ color, onChange }: { color: string; onChange: (color: string) => void }) => {
+    const [hue, setHue] = useState(210);
+    const [saturation, setSaturation] = useState(100);
+    const [lightness, setLightness] = useState(50);
+
+    useEffect(() => {
+      // Convert hex to HSL for initial values
+      const hexToHsl = (hex: string) => {
+        const r = parseInt(hex.slice(1, 3), 16) / 255;
+        const g = parseInt(hex.slice(3, 5), 16) / 255;
+        const b = parseInt(hex.slice(5, 7), 16) / 255;
+        
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        let h = 0, s = 0;
+        const l = (max + min) / 2;
+
+        if (max !== min) {
+          const d = max - min;
+          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+          switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+          }
+          h /= 6;
+        }
+        
+        return { h: h * 360, s: s * 100, l: l * 100 };
+      };
+      
+      const hsl = hexToHsl(color);
+      setHue(hsl.h);
+      setSaturation(hsl.s);
+      setLightness(hsl.l);
+    }, [color]);
+
+    const hslToHex = (h: number, s: number, l: number) => {
+      s /= 100;
+      l /= 100;
+      const c = (1 - Math.abs(2 * l - 1)) * s;
+      const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+      const m = l - c / 2;
+      let r = 0, g = 0, b = 0;
+
+      if (0 <= h && h < 60) {
+        r = c; g = x; b = 0;
+      } else if (60 <= h && h < 120) {
+        r = x; g = c; b = 0;
+      } else if (120 <= h && h < 180) {
+        r = 0; g = c; b = x;
+      } else if (180 <= h && h < 240) {
+        r = 0; g = x; b = c;
+      } else if (240 <= h && h < 300) {
+        r = x; g = 0; b = c;
+      } else if (300 <= h && h < 360) {
+        r = c; g = 0; b = x;
+      }
+
+      const rHex = Math.round((r + m) * 255).toString(16).padStart(2, '0');
+      const gHex = Math.round((g + m) * 255).toString(16).padStart(2, '0');
+      const bHex = Math.round((b + m) * 255).toString(16).padStart(2, '0');
+
+      return `#${rHex}${gHex}${bHex}`;
+    };
+
+    const handleHueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newHue = parseInt(e.target.value);
+      setHue(newHue);
+      onChange(hslToHex(newHue, saturation, lightness));
+    };
+
+    const handleSaturationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newSaturation = parseInt(e.target.value);
+      setSaturation(newSaturation);
+      onChange(hslToHex(hue, newSaturation, lightness));
+    };
+
+    const handleLightnessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newLightness = parseInt(e.target.value);
+      setLightness(newLightness);
+      onChange(hslToHex(hue, saturation, newLightness));
+    };
+
+    return (
+      <div className="p-4 bg-slate-800 rounded-lg border border-slate-600">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Hue</label>
+            <input
+              type="range"
+              min="0"
+              max="360"
+              value={hue}
+              onChange={handleHueChange}
+              className="w-full h-2 bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 via-blue-500 via-purple-500 to-red-500 rounded-lg appearance-none cursor-pointer"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Saturation</label>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={saturation}
+              onChange={handleSaturationChange}
+              className="w-full h-2 bg-gradient-to-r from-gray-400 to-red-500 rounded-lg appearance-none cursor-pointer"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Lightness</label>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={lightness}
+              onChange={handleLightnessChange}
+              className="w-full h-2 bg-gradient-to-r from-black via-gray-500 to-white rounded-lg appearance-none cursor-pointer"
+            />
+          </div>
+          <div className="flex items-center space-x-3">
+            <div 
+              className="w-12 h-12 rounded-lg border-2 border-slate-600"
+              style={{ backgroundColor: color }}
+            />
+            <input
+              type="text"
+              value={color}
+              onChange={(e) => onChange(e.target.value)}
+              className="flex-1 px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm"
+              placeholder="#000000"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const toneOptions = [
     { value: 'professional', label: 'Professional', description: 'Clean and corporate' },
     { value: 'casual', label: 'Casual', description: 'Friendly and approachable' },
@@ -60,7 +201,8 @@ const HeroSection = () => {
     { value: 'neutral', label: 'Neutral', hex: '#6B7280' },
     { value: 'dark', label: 'Dark', hex: '#1F2937' },
     { value: 'colorful', label: 'Colorful', hex: 'linear-gradient(to right, #3B82F6, #8B5CF6)' },
-    { value: 'minimal', label: 'Minimal', hex: '#F3F4F6' }
+    { value: 'minimal', label: 'Minimal', hex: '#F3F4F6' },
+    { value: 'rgb', label: 'Custom RGB', hex: customRgbColor }
   ];
 
   const featuresOptions = [
@@ -155,7 +297,7 @@ const HeroSection = () => {
         
         Features needed: ${selectedFeatures.join(', ') || 'standard business features'}.
         
-        Use a ${colorPreference} color scheme with a ${tone} design approach.
+        Use a ${colorPreference === 'rgb' ? `custom color (${customRgbColor})` : colorPreference} color scheme with a ${tone} design approach.
         Font style: ${fontFamily}, Layout: ${layoutStyle}, Animation: ${animationLevel}.
       `.trim();
 
@@ -169,6 +311,8 @@ const HeroSection = () => {
           targetAudience,
           tone,
           colorPreference,
+          domainName,
+          customColor: colorPreference === 'rgb' ? customRgbColor : undefined,
           features: selectedFeatures,
           fontFamily,
           layoutStyle,
@@ -222,6 +366,8 @@ const HeroSection = () => {
     setTargetAudience('');
     setTone('professional');
     setColorPreference('blue');
+    setCustomRgbColor('#3B82F6');
+    setShowColorWheel(false);
     setSelectedFeatures([]);
     setIsLoading(false);
     setError(null);
@@ -264,9 +410,6 @@ const HeroSection = () => {
                 </div>
                 <p className="text-lg text-slate-300 mb-2">
                   V0-Powered Website Generation
-                </p>
-                <p className="text-slate-400">
-                  {isLoading ? 'Your website is being generated with V0.dev' : 'Your website is ready!'}
                 </p>
               </div>
 
@@ -600,7 +743,15 @@ const HeroSection = () => {
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() => setColorPreference(option.value as 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'neutral' | 'dark' | 'colorful' | 'minimal')}
+                      onClick={() => {
+                        const colorValue = option.value as 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'neutral' | 'dark' | 'colorful' | 'minimal' | 'rgb';
+                        setColorPreference(colorValue);
+                        if (option.value === 'rgb') {
+                          setShowColorWheel(true);
+                        } else {
+                          setShowColorWheel(false);
+                        }
+                      }}
                       className={`p-3 rounded-lg border transition-all ${
                         colorPreference === option.value
                           ? 'border-blue-500 bg-blue-600/20'
@@ -617,6 +768,20 @@ const HeroSection = () => {
                     </button>
                   ))}
                 </div>
+                
+                {/* RGB Color Wheel */}
+                {showColorWheel && (
+                  <div className="mt-4">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <Palette size={16} />
+                      <span className="text-sm font-medium text-slate-300">Custom Color</span>
+                    </div>
+                    <ColorWheel 
+                      color={customRgbColor} 
+                      onChange={setCustomRgbColor}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Features */}

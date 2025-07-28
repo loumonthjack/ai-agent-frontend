@@ -91,6 +91,8 @@ const V0Preview: React.FC<V0PreviewProps> = ({ projectId, onReset, project, isLo
 
   const getStatusText = () => {
     switch (currentProject?.status) {
+      case 'PROCESSING':
+        return 'Processing...';
       case 'BUILDING':
         return 'Analyzing requirements...';
       case 'DESIGN':
@@ -220,35 +222,14 @@ const V0Preview: React.FC<V0PreviewProps> = ({ projectId, onReset, project, isLo
               </button>
             </div>
           </div>
-        ) : currentProject?.status === 'READY' && (previewUrl || deploymentUrl) ? (
+        ) : currentProject?.status === 'READY' ? (
           <iframe
             id="v0-preview"
-            src={previewUrl || deploymentUrl || 'https://v0.dev/'}
+            src={previewUrl || 'https://v0.dev/'}
             className="w-full h-full border-0"
             title="V0 Website Preview"
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
           />
-        ) : currentProject?.status === 'READY' ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-white mb-2">Website Generated!</h3>
-              <p className="text-slate-400 mb-4">
-                Your website has been created successfully.
-              </p>
-              {deploymentUrl && (
-                <a
-                  href={deploymentUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center space-x-2"
-                >
-                  <ExternalLink size={16} />
-                  <span>View Live Website</span>
-                </a>
-              )}
-            </div>
-          </div>
         ) : (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">

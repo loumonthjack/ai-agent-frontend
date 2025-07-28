@@ -9,8 +9,10 @@ export interface CreateProjectRequest {
     businessName?: string;
     industry?: string;
     targetAudience?: string;
+    domainName?: string;
     tone?: 'professional' | 'casual' | 'modern' | 'elegant' | 'playful' | 'corporate' | 'creative' | 'minimalist';
-    colorPreference?: 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'neutral' | 'dark' | 'colorful' | 'minimal';
+    colorPreference?: 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'neutral' | 'dark' | 'colorful' | 'minimal' | 'rgb';
+    customColor?: string;
     features?: string[];
     // New design options
     fontFamily?: 'sans-serif' | 'serif' | 'display' | 'handwritten' | 'monospace' | 'custom';
@@ -31,7 +33,7 @@ export interface Project {
   description?: string;
   prompt: string;
   userEmail?: string;
-  status: 'BUILDING' | 'DESIGN' | 'TESTING' | 'DEPLOYING' | 'ACTIVE' | 'FAILED' | 'READY';
+  status: 'PROCESSING' | 'BUILDING' | 'DESIGN' | 'TESTING' | 'DEPLOYING' | 'ACTIVE' | 'FAILED' | 'READY';
   createdAt: string;
   updatedAt: string;
   executionArn?: string;
